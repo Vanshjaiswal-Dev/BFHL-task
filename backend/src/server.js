@@ -224,6 +224,59 @@ app.delete("/tickets/:id", async (req, res, next) => {
   }
 });
 
+/* ── BFHL Routes ── */
+app.get("/bfhl", (req, res) => {
+  return res.status(200).json({ operation_code: 1 });
+});
+
+app.post("/bfhl", (req, res) => {
+  try {
+    const { data, file_b64 } = req.body;
+
+    if (!data || !Array.isArray(data)) {
+      return res.status(400).json({ is_success: false, error: "Invalid input: 'data' must be an array" });
+    }
+
+    const numbers = data.filter((item) => !isNaN(item) && item !== "" && item !== null);
+    const alphabets = data.filter((item) => typeof item === "string" && /^[a-zA-Z]$/.test(item));
+    const lowercaseAlphabets = alphabets.filter((ch) => ch >= "a" && ch <= "z");
+    const highestLowercase = lowercaseAlphabets.length > 0
+      ? [lowercaseAlphabets.sort((a, b) => b.localeCompare(a))[0]]
+      : [];
+
+    // File handling
+    let fileValid = false;
+    let fileMimeType = null;
+    let fileSizeKb = null;
+
+    if (file_b64) {
+      try {
+        const buffer = Buffer.from(file_b64, "base64");
+        fileSizeKb = (buffer.length / 1024).toFixed(2);
+        fileValid = true;
+        fileMimeType = "application/octet-stream";
+      } catch {
+        fileValid = false;
+      }
+    }
+
+    return res.status(200).json({
+      is_success: true,
+      user_id: "vanshjaiswal_28082005",
+      email: "vanshjaiswal230764@acropolis.in",
+      roll_number: "0827CS231287",
+      numbers,
+      alphabets,
+      highest_lowercase_alphabet: highestLowercase,
+      file_valid: fileValid,
+      file_mime_type: fileMimeType,
+      file_size_kb: fileSizeKb
+    });
+  } catch (error) {
+    return res.status(500).json({ is_success: false, error: "Internal server error" });
+  }
+});
+
 app.use((error, req, res, next) => {
   if (error.name === "CastError") {
     return badRequest(res, "Invalid ticket id");
