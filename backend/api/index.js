@@ -126,19 +126,15 @@ async function connectDB() {
 }
 
 /* ── Routes ── */
-app.get("/", (req, res) => {
+app.get(["/", "/api"], (req, res) => {
   res.json({ ok: true, message: "DeskFlow API is running" });
 });
 
-app.get("/api", (req, res) => {
-  res.json({ ok: true, message: "DeskFlow API is running" });
-});
-
-app.get("/api/health", (req, res) => {
+app.get(["/health", "/api/health"], (req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/api/tickets", async (req, res, next) => {
+app.post(["/tickets", "/api/tickets"], async (req, res, next) => {
   try {
     await connectDB();
     const validationError = validateTicketInput(req.body);
@@ -161,7 +157,7 @@ app.post("/api/tickets", async (req, res, next) => {
   }
 });
 
-app.get("/api/tickets", async (req, res, next) => {
+app.get(["/tickets", "/api/tickets"], async (req, res, next) => {
   try {
     await connectDB();
     const { status, priority, breached } = req.query;
@@ -186,7 +182,7 @@ app.get("/api/tickets", async (req, res, next) => {
   }
 });
 
-app.get("/api/tickets/stats", async (req, res, next) => {
+app.get(["/tickets/stats", "/api/tickets/stats"], async (req, res, next) => {
   try {
     await connectDB();
     const tickets = (await Ticket.find()).map(withDerivedFields);
@@ -208,7 +204,7 @@ app.get("/api/tickets/stats", async (req, res, next) => {
   }
 });
 
-app.patch("/api/tickets/:id", async (req, res, next) => {
+app.patch(["/tickets/:id", "/api/tickets/:id"], async (req, res, next) => {
   try {
     await connectDB();
     const validationError = validateTicketInput(req.body, { partial: true });
@@ -245,7 +241,7 @@ app.patch("/api/tickets/:id", async (req, res, next) => {
   }
 });
 
-app.delete("/api/tickets/:id", async (req, res, next) => {
+app.delete(["/tickets/:id", "/api/tickets/:id"], async (req, res, next) => {
   try {
     await connectDB();
     const deleted = await Ticket.findByIdAndDelete(req.params.id);
