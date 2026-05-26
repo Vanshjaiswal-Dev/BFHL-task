@@ -53,6 +53,9 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [draggingId, setDraggingId] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null);
+  const [dropError, setDropError] = useState(null);
 
   const grouped = useMemo(() => {
     return Object.fromEntries(statuses.map((status) => [status.id, tickets.filter((ticket) => ticket.status === status.id)]));
@@ -137,6 +140,64 @@ function App() {
     }
   }
 
+  function handleDragStart(event, ticket) {
+    setDraggingId(ticket._id);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", ticket._id);
+  }
+
+  function handleDragEnd() {
+    setDraggingId(null);
+    setDropTarget(null);
+  }
+
+  function handleDragOver(event, statusId) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropTarget(statusId);
+  }
+
+  function handleDragLeave(event, statusId) {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setDropTarget((current) => (current === statusId ? null : current));
+    }
+  }
+
+  async function handleDrop(event, targetStatus) {
+    event.preventDefault();
+    setDropTarget(null);
+    setDraggingId(null);
+
+    const ticketId = event.dataTransfer.getData("text/plain");
+    const ticket = tickets.find((t) => t._id === ticketId);
+    if (!ticket || ticket.status === targetStatus) return;
+
+    // Check if this is a valid adjacent transition
+    const currentIndex = statuses.findIndex((s) => s.id === ticket.status);
+    const targetIndex = statuses.findIndex((s) => s.id === targetStatus);
+    const distance = targetIndex - currentIndex;
+
+    if (distance !== 1 && distance !== -1) {
+      // Invalid transition — show error flash on the column
+      setDropError(targetStatus);
+      setTimeout(() => setDropError(null), 800);
+      return;
+    }
+
+    try {
+      const updated = await request(`/tickets/${ticket._id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: targetStatus })
+      });
+      setTickets((current) => current.map((item) => (item._id === updated._id ? updated : item)));
+      setStats(await request("/tickets/stats"));
+    } catch (err) {
+      setDropError(targetStatus);
+      setTimeout(() => setDropError(null), 800);
+      setError(err.message);
+    }
+  }
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -186,7 +247,13 @@ function App() {
 
       <section className="board" aria-busy={loading}>
         {statuses.map((status) => (
-          <div className="column" key={status.id}>
+          <div
+            className={`column${dropTarget === status.id ? " drag-over" : ""}${dropError === status.id ? " drop-error" : ""}`}
+            key={status.id}
+            onDragOver={(e) => handleDragOver(e, status.id)}
+            onDragLeave={(e) => handleDragLeave(e, status.id)}
+            onDrop={(e) => handleDrop(e, status.id)}
+          >
             <div className="column-header">
               <h2>{status.label}</h2>
               <span>{grouped[status.id]?.length || 0}</span>
@@ -197,7 +264,13 @@ function App() {
               </div>
             ) : grouped[status.id]?.length ? (
               grouped[status.id].map((ticket) => (
-                <article className={`ticket-card ${ticket.slaBreached ? "breached" : ""}`} key={ticket._id}>
+                <article
+                  className={`ticket-card ${ticket.slaBreached ? "breached" : ""}${draggingId === ticket._id ? " dragging" : ""}`}
+                  key={ticket._id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, ticket)}
+                  onDragEnd={handleDragEnd}
+                >
                   <div className="card-title-row">
                     <h3>{ticket.subject}</h3>
                     <span className={`priority ${ticket.priority}`}>{ticket.priority}</span>

@@ -300,6 +300,42 @@ textarea {
   text-align: center;
 }
 
+/* ── Drag & Drop ── */
+.ticket-card {
+  cursor: grab;
+}
+
+.ticket-card:active {
+  cursor: grabbing;
+}
+
+.ticket-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.97);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15);
+}
+
+.column.drag-over {
+  background: #dbeafe;
+  border-color: #3b82f6;
+  border-style: dashed;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.column.drop-error {
+  animation: shake 0.4s ease-in-out;
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
 .create-panel {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
