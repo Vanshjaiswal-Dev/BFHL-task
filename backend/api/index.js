@@ -126,6 +126,10 @@ async function connectDB() {
 }
 
 /* ── Routes ── */
+app.get("/", (req, res) => {
+  res.json({ ok: true, message: "DeskFlow API is running" });
+});
+
 app.get("/api", (req, res) => {
   res.json({ ok: true, message: "DeskFlow API is running" });
 });
